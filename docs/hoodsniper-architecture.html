@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hoodsniper v16.9 — High-Level Runtime &amp; Tools Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: #020617;
+      min-height: 100vh;
+      padding: 2rem;
+      color: #f8fafc;
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; }
+
+    .header { margin-bottom: 1.75rem; }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .pulse-dot {
+      width: 12px; height: 12px;
+      background: #34d399;
+      border-radius: 50%;
+      box-shadow: 0 0 12px #34d399;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+
+    h1 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: #f1f5f9;
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      font-size: 0.82rem;
+      margin-left: 1.625rem;
+      line-height: 1.5;
+    }
+
+    .audit-badge {
+      display: inline-block;
+      margin-left: 1.625rem;
+      margin-top: 0.6rem;
+      padding: 0.3rem 0.7rem;
+      border-radius: 0.4rem;
+      background: rgba(136, 19, 55, 0.25);
+      border: 1px solid #fb7185;
+      color: #fda4af;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .audit-badge.emerald {
+      background: rgba(6, 78, 59, 0.25);
+      border: 1px solid #34d399;
+      color: #6ee7b7;
+      margin-left: 0.5rem;
+    }
+
+    .diagram-container {
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 1rem;
+      border: 1px solid #1e293b;
+      padding: 1.5rem;
+      margin-top: 1.25rem;
+      overflow-x: auto;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+    }
+
+    svg { width: 100%; min-width: 1280px; display: block; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+
+    .card {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 0.75rem;
+      border: 1px solid #1e293b;
+      padding: 1.25rem;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .card-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    .card-dot.emerald { background: #34d399; box-shadow: 0 0 8px #34d399; }
+    .card-dot.cyan { background: #22d3ee; box-shadow: 0 0 8px #22d3ee; }
+    .card-dot.rose { background: #fb7185; box-shadow: 0 0 8px #fb7185; }
+    .card-dot.violet { background: #a78bfa; box-shadow: 0 0 8px #a78bfa; }
+    .card-dot.amber { background: #fbbf24; box-shadow: 0 0 8px #fbbf24; }
+    .card-dot.orange { background: #fb923c; box-shadow: 0 0 8px #fb923c; }
+
+    .card h3 { font-size: 0.85rem; font-weight: 600; color: #f1f5f9; }
+
+    .card ul {
+      list-style: none;
+      color: #94a3b8;
+      font-size: 0.73rem;
+      line-height: 1.65;
+    }
+
+    .card li { margin-bottom: 0.4rem; }
+    .card strong { color: #e2e8f0; }
+    .card code {
+      background: rgba(30, 41, 59, 0.8);
+      padding: 0.05rem 0.3rem;
+      border-radius: 0.2rem;
+      color: #7dd3fc;
+      font-size: 0.7rem;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 2rem;
+      color: #475569;
+      font-size: 0.73rem;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>Hoodsniper v16.9 — High-Level Runtime &amp; Tools Architecture</h1>
+      </div>
+      <p class="subtitle">
+        Robinhood Chain (EVM <code>chainId 4663</code>) &nbsp;•&nbsp; Pure Uniswap v4 Execution &nbsp;•&nbsp; Weighted 2-Source Insider Radar &nbsp;•&nbsp; Autonomous Tools Suite
+      </p>
+      <div>
+        <div class="audit-badge">
+          AUDITED ARCHITECTURE — Userbot Telegram OFF (userbot_enabled=0) · Sinyal masuk murni on-chain
+        </div>
+        <div class="audit-badge emerald">
+          v16.9 UPGRADE: 2-Source Insider Scoring (BS+GT) · Pure Dexscreener Discovery · Suite Tools terintegrasi
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Diagram -->
+    <div class="diagram-container">
+      <svg viewBox="0 0 1340 1010">
+        <defs>
+          <marker id="a-slate" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#64748b" />
+          </marker>
+          <marker id="a-cyan" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#22d3ee" />
+          </marker>
+          <marker id="a-emerald" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#34d399" />
+          </marker>
+          <marker id="a-rose" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#fb7185" />
+          </marker>
+          <marker id="a-orange" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#fb923c" />
+          </marker>
+          <marker id="a-violet" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#a78bfa" />
+          </marker>
+          <marker id="a-amber" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#fbbf24" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- ============ RUNTIME HOST FRAME (bot.py) ============ -->
+        <rect x="25" y="25" width="1290" height="570" rx="12" fill="rgba(148, 163, 184, 0.03)" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="9,5"/>
+        <text x="42" y="44" fill="#cbd5e1" font-size="10" font-weight="700">bot.py — asyncio Runtime Host   ·   PM2 process: hoodsniper-v16   ·   Event-Driven Core</text>
+
+        <!-- ============ ROW 1 — SIGNAL INPUTS ============ -->
+
+        <!-- 1. scanner.py -->
+        <rect x="45" y="55" width="230" height="75" rx="6" fill="#0f172a" />
+        <rect x="45" y="55" width="230" height="75" rx="6" fill="rgba(8, 51, 68, 0.45)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="160" y="75" fill="#f8fafc" font-size="11" font-weight="700" text-anchor="middle">1. scanner.py</text>
+        <text x="160" y="90" fill="#22d3ee" font-size="9" text-anchor="middle">Uniswap v4 Pool Scanner</text>
+        <text x="160" y="104" fill="#94a3b8" font-size="8" text-anchor="middle">PoolManager Initialize stream</text>
+        <text x="160" y="118" fill="#94a3b8" font-size="8" text-anchor="middle">pending_pools retry · 20s throttle</text>
+
+        <!-- 2. tracker.py -->
+        <rect x="315" y="55" width="230" height="75" rx="6" fill="#0f172a" />
+        <rect x="315" y="55" width="230" height="75" rx="6" fill="rgba(251, 146, 60, 0.25)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="430" y="75" fill="#f8fafc" font-size="11" font-weight="700" text-anchor="middle">2. tracker.py</text>
+        <text x="430" y="90" fill="#fb923c" font-size="9" text-anchor="middle">Insider Intel Radar</text>
+        <text x="430" y="104" fill="#94a3b8" font-size="8" text-anchor="middle">101 rotated wallets · 10m CA dedup</text>
+        <text x="430" y="118" fill="#94a3b8" font-size="8" text-anchor="middle">alert-only → 0 posisi baru</text>
+
+        <!-- 3. userbot (OFF) -->
+        <rect x="585" y="55" width="230" height="75" rx="6" fill="#0f172a" />
+        <rect x="585" y="55" width="230" height="75" rx="6" fill="rgba(30, 41, 59, 0.45)" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5,4"/>
+        <text x="700" y="75" fill="#94a3b8" font-size="11" font-weight="700" text-anchor="middle">3. Userbot Telegram</text>
+        <text x="700" y="90" fill="#64748b" font-size="9" text-anchor="middle">Telethon MTProto mirror</text>
+        <text x="700" y="104" fill="#ef4444" font-size="8" text-anchor="middle">OFF — userbot_enabled=0</text>
+        <text x="700" y="118" fill="#64748b" font-size="8" text-anchor="middle">sources table: only SCANNER</text>
+
+        <!-- ============ ROW 2 — FUNNEL & GATES ============ -->
+
+        <!-- 4. listener.py -->
+        <rect x="45" y="180" width="230" height="110" rx="6" fill="#0f172a" />
+        <rect x="45" y="180" width="230" height="110" rx="6" fill="rgba(6, 78, 59, 0.5)" stroke="#34d399" stroke-width="2"/>
+        <text x="160" y="202" fill="#f8fafc" font-size="11" font-weight="700" text-anchor="middle">4. listener.py</text>
+        <text x="160" y="220" fill="#34d399" font-size="9.5" font-weight="600" text-anchor="middle">CORE DECISION PIPELINE</text>
+        <text x="160" y="238" fill="#94a3b8" font-size="8" text-anchor="middle">process_ca() — funnel tunggal</text>
+        <text x="160" y="252" fill="#94a3b8" font-size="8" text-anchor="middle">goldilocks_eval() entry gate</text>
+        <text x="160" y="266" fill="#94a3b8" font-size="8" text-anchor="middle">_fastpath_gate() 0ms LLM bypass</text>
+        <text x="160" y="280" fill="#94a3b8" font-size="8" text-anchor="middle">_notify() render BUY/SKIP</text>
+
+        <!-- 5. safety.py -->
+        <rect x="315" y="180" width="230" height="95" rx="6" fill="#0f172a" />
+        <rect x="315" y="180" width="230" height="95" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="430" y="202" fill="#f8fafc" font-size="11" font-weight="700" text-anchor="middle">5. safety.py</text>
+        <text x="430" y="218" fill="#fb7185" font-size="9" text-anchor="middle">Pre-Trade Gate Audit</text>
+        <text x="430" y="234" fill="#94a3b8" font-size="8" text-anchor="middle">bytecode + holder distribution</text>
+        <text x="430" y="247" fill="#94a3b8" font-size="8" text-anchor="middle">Dev ≤4% · Top10 ≤30%</text>
+        <text x="430" y="260" fill="#94a3b8" font-size="8" text-anchor="middle">fail-closed on data error</text>
+
+        <!-- 6. clone_guard.py -->
+        <rect x="585" y="180" width="230" height="95" rx="6" fill="#0f172a" />
+        <rect x="585" y="180" width="230" height="95" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="700" y="202" fill="#f8fafc" font-size="11" font-weight="700" text-anchor="middle">6. clone_guard.py</text>
+        <text x="700" y="218" fill="#fb7185" font-size="9" text-anchor="middle">Clone &amp; Operator Guard</text>
+        <text x="700" y="234" fill="#94a3b8" font-size="8" text-anchor="middle">Blockscout bytecode clustering</text>
+        <text x="700" y="247" fill="#94a3b8" font-size="8" text-anchor="middle">operator/deployer family map</text>
+        <text x="700" y="260" fill="#94a3b8" font-size="8" text-anchor="middle">max 3 entry / family / 24h</text>
+
+        <!-- 7. v4.py -->
+        <rect x="855" y="180" width="230" height="95" rx="6" fill="#0f172a" />
+        <rect x="855" y="180" width="230" height="95" rx="6" fill="rgba(120, 53, 15, 0.35)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="970" y="202" fill="#f8fafc" font-size="11" font-weight="700" text-anchor="middle">7. v4.py</text>
+        <text x="970" y="218" fill="#fbbf24" font-size="9" text-anchor="middle">On-Chain Quoter &amp; Math</text>
+        <text x="970" y="234" fill="#94a3b8" font-size="8" text-anchor="middle">V4Quoter quoteExactInputSingle</text>
+        <text x="970" y="247" fill="#94a3b8" font-size="8" text-anchor="middle">liq ≥$4k · mcap $5k–$35k</text>
+        <text x="970" y="260" fill="#94a3b8" font-size="8" text-anchor="middle">ratio ≥35% · burned supply cut</text>
+
+        <!-- ============ ROW 3 — EXECUTION & MONITOR ============ -->
+
+        <!-- 8. trader.py -->
+        <rect x="315" y="335" width="230" height="95" rx="6" fill="#0f172a" />
+        <rect x="315" y="335" width="230" height="95" rx="6" fill="rgba(6, 78, 59, 0.45)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="430" y="356" fill="#f8fafc" font-size="11" font-weight="700" text-anchor="middle">8. trader.py</text>
+        <text x="430" y="372" fill="#34d399" font-size="9" text-anchor="middle">Execution Trader</text>
+        <text x="430" y="389" fill="#94a3b8" font-size="8" text-anchor="middle">EVM signer · local nonce mgr</text>
+        <text x="430" y="402" fill="#94a3b8" font-size="8" text-anchor="middle">slippage guard · UniversalRouter</text>
+        <text x="430" y="415" fill="#94a3b8" font-size="8" text-anchor="middle">paper sim vs live routing</text>
+
+        <!-- 9. engine.py -->
+        <rect x="585" y="335" width="230" height="105" rx="6" fill="#0f172a" />
+        <rect x="585" y="335" width="230" height="105" rx="6" fill="rgba(6, 78, 59, 0.45)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="700" y="356" fill="#f8fafc" font-size="11" font-weight="700" text-anchor="middle">9. engine.py</text>
+        <text x="700" y="372" fill="#34d399" font-size="9" text-anchor="middle">Exit Engine &amp; Monitor</text>
+        <text x="700" y="388" fill="#94a3b8" font-size="8" text-anchor="middle">2s loop · on-chain derived PnL</text>
+        <text x="700" y="401" fill="#94a3b8" font-size="8" text-anchor="middle">TP1 +20% / TP2 +45% / SL -30%</text>
+        <text x="700" y="414" fill="#94a3b8" font-size="8" text-anchor="middle">15% trail · 240s time-stop</text>
+        <text x="700" y="427" fill="#fb7185" font-size="8" text-anchor="middle">0-liquidity instant rug exit</text>
+
+        <!-- 10. control_bot.py -->
+        <rect x="855" y="335" width="230" height="95" rx="6" fill="#0f172a" />
+        <rect x="855" y="335" width="230" height="95" rx="6" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="970" y="356" fill="#f8fafc" font-size="11" font-weight="700" text-anchor="middle">10. control_bot.py</text>
+        <text x="970" y="372" fill="#fb923c" font-size="9" text-anchor="middle">Telegram Control Panel UI</text>
+        <text x="970" y="389" fill="#94a3b8" font-size="8" text-anchor="middle">BotFather 4x2 inline menu</text>
+        <text x="970" y="402" fill="#94a3b8" font-size="8" text-anchor="middle">manual balance &amp; paper reset</text>
+        <text x="970" y="415" fill="#94a3b8" font-size="8" text-anchor="middle">Log Beli Insider panel view</text>
+
+        <!-- ============ ROW 4 — PERSISTENCE & REVIEW ============ -->
+
+        <!-- 11. db.py -->
+        <rect x="45" y="475" width="330" height="95" rx="6" fill="#0f172a" />
+        <rect x="45" y="475" width="330" height="95" rx="6" fill="rgba(76, 29, 149, 0.45)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="210" y="497" fill="#f8fafc" font-size="11" font-weight="700" text-anchor="middle">11. db.py</text>
+        <text x="210" y="513" fill="#a78bfa" font-size="9" text-anchor="middle">SQLite WAL Telemetry Store</text>
+        <text x="210" y="531" fill="#94a3b8" font-size="8" text-anchor="middle">hoodsniper.db — positions · decisions · calls</text>
+        <text x="210" y="544" fill="#94a3b8" font-size="8" text-anchor="middle">insider_wallets (score, sources) · insider_buys</text>
+        <text x="210" y="557" fill="#94a3b8" font-size="8" text-anchor="middle">sources · pending_pools · blacklist</text>
+
+        <!-- 12. agent.py -->
+        <rect x="405" y="475" width="310" height="95" rx="6" fill="#0f172a" />
+        <rect x="405" y="475" width="310" height="95" rx="6" fill="rgba(76, 29, 149, 0.45)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="560" y="497" fill="#f8fafc" font-size="11" font-weight="700" text-anchor="middle">12. agent.py</text>
+        <text x="560" y="513" fill="#a78bfa" font-size="9" text-anchor="middle">LLM Post-Mortem Reviewer</text>
+        <text x="560" y="531" fill="#94a3b8" font-size="8" text-anchor="middle">agent_review_loop · daily_recap_loop</text>
+        <text x="560" y="544" fill="#94a3b8" font-size="8" text-anchor="middle">loss audit · parameter suggestion</text>
+        <text x="560" y="557" fill="#94a3b8" font-size="8" text-anchor="middle">never blocks the entry fast-path</text>
+
+        <!-- Support: market data clients -->
+        <rect x="745" y="475" width="340" height="95" rx="6" fill="#0f172a" />
+        <rect x="745" y="475" width="340" height="95" rx="6" fill="rgba(30, 41, 59, 0.55)" stroke="#64748b" stroke-width="1.5"/>
+        <text x="915" y="497" fill="#cbd5e1" font-size="10.5" font-weight="700" text-anchor="middle">Market Data Clients</text>
+        <text x="915" y="513" fill="#94a3b8" font-size="9" text-anchor="middle">dexscreener.py · geckoterminal.py</text>
+        <text x="915" y="531" fill="#64748b" font-size="8" text-anchor="middle">pair lookup · mcap / liquidity read</text>
+        <text x="915" y="544" fill="#64748b" font-size="8" text-anchor="middle">pool-type detection (v4 guard)</text>
+        <text x="915" y="557" fill="#64748b" font-size="8" text-anchor="middle">non-blocking via asyncio.to_thread</text>
+
+        <!-- ============ TOOLS & UTILITIES SUITE FRAME ============ -->
+        <rect x="25" y="620" width="1290" height="185" rx="12" fill="rgba(56, 189, 248, 0.03)" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="8,4"/>
+        <text x="42" y="639" fill="#38bdf8" font-size="10" font-weight="700">TOOLS &amp; UTILITIES SUITE (tools/ directory)   ·   Autonomous Maintenance, Scoring &amp; Inspection</text>
+
+        <!-- Tool 1: screen_insiders.py -->
+        <rect x="45" y="652" width="285" height="66" rx="5" fill="#0f172a" />
+        <rect x="45" y="652" width="285" height="66" rx="5" fill="rgba(251, 146, 60, 0.25)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="187" y="670" fill="#f8fafc" font-size="9.5" font-weight="700" text-anchor="middle">screen_insiders.py</text>
+        <text x="187" y="684" fill="#fb923c" font-size="8" text-anchor="middle">Dual-Source Screener (BS + GT)</text>
+        <text x="187" y="697" fill="#94a3b8" font-size="7.5" text-anchor="middle">Pure Dexscreener runner (0 DB pos query)</text>
+        <text x="187" y="708" fill="#94a3b8" font-size="7.5" text-anchor="middle">BS+GT 2.0 · BS 1.0/0.5 · GT 0.25 karantina</text>
+
+        <!-- Tool 2: rotate_insiders.py -->
+        <rect x="350" y="652" width="285" height="66" rx="5" fill="#0f172a" />
+        <rect x="350" y="652" width="285" height="66" rx="5" fill="rgba(251, 146, 60, 0.25)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="492" y="670" fill="#f8fafc" font-size="9.5" font-weight="700" text-anchor="middle">rotate_insiders.py</text>
+        <text x="492" y="684" fill="#fb923c" font-size="8" text-anchor="middle">24h Automated Insider Rotator</text>
+        <text x="492" y="697" fill="#94a3b8" font-size="7.5" text-anchor="middle">Prune inactive >3d (win&lt;2) · harvest gainers</text>
+        <text x="492" y="708" fill="#94a3b8" font-size="7.5" text-anchor="middle">Recruit qualifies ke insider_wallets</text>
+
+        <!-- Tool 3: gate_metrics.py -->
+        <rect x="655" y="652" width="310" height="66" rx="5" fill="#0f172a" />
+        <rect x="655" y="652" width="310" height="66" rx="5" fill="rgba(136, 19, 55, 0.3)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="810" y="670" fill="#f8fafc" font-size="9.5" font-weight="700" text-anchor="middle">gate_metrics.py &lt;ca&gt;</text>
+        <text x="810" y="684" fill="#fb7185" font-size="8" text-anchor="middle">Pre-Trade Gate Diagnostics CLI</text>
+        <text x="810" y="697" fill="#94a3b8" font-size="7.5" text-anchor="middle">Live inspection: Liq, FDV, dev/top10 %</text>
+        <text x="810" y="708" fill="#94a3b8" font-size="7.5" text-anchor="middle">Clone risk &amp; operator family verification</text>
+
+        <!-- Tool 4: suffix_stats.py -->
+        <rect x="985" y="652" width="310" height="66" rx="5" fill="#0f172a" />
+        <rect x="985" y="652" width="310" height="66" rx="5" fill="rgba(136, 19, 55, 0.3)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1140" y="670" fill="#f8fafc" font-size="9.5" font-weight="700" text-anchor="middle">suffix_stats.py</text>
+        <text x="1140" y="684" fill="#fb7185" font-size="8" text-anchor="middle">Vanity Suffix &amp; Pattern Audit</text>
+        <text x="1140" y="697" fill="#94a3b8" font-size="7.5" text-anchor="middle">Win/Loss/Rug breakdown per-suffix</text>
+        <text x="1140" y="708" fill="#94a3b8" font-size="7.5" text-anchor="middle">...7777 validation (19% vs 18% rug rate)</text>
+
+        <!-- Tool 5: db_status.py -->
+        <rect x="45" y="728" width="285" height="64" rx="5" fill="#0f172a" />
+        <rect x="45" y="728" width="285" height="64" rx="5" fill="rgba(76, 29, 149, 0.3)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="187" y="746" fill="#f8fafc" font-size="9.5" font-weight="700" text-anchor="middle">db_status.py</text>
+        <text x="187" y="760" fill="#a78bfa" font-size="8" text-anchor="middle">Telemetry &amp; Health Monitor</text>
+        <text x="187" y="773" fill="#94a3b8" font-size="7.5" text-anchor="middle">DB size, WAL status, positions breakdown</text>
+        <text x="187" y="784" fill="#94a3b8" font-size="7.5" text-anchor="middle">Active insider counts &amp; win rate health</text>
+
+        <!-- Tool 6: reset_paper_wallet.py -->
+        <rect x="350" y="728" width="285" height="64" rx="5" fill="#0f172a" />
+        <rect x="350" y="728" width="285" height="64" rx="5" fill="rgba(6, 78, 59, 0.3)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="492" y="746" fill="#f8fafc" font-size="9.5" font-weight="700" text-anchor="middle">reset_paper_wallet.py</text>
+        <text x="492" y="760" fill="#34d399" font-size="8" text-anchor="middle">Bankroll &amp; State Reset</text>
+        <text x="492" y="773" fill="#94a3b8" font-size="7.5" text-anchor="middle">Reset paper positions &amp; clean slate</text>
+        <text x="492" y="784" fill="#94a3b8" font-size="7.5" text-anchor="middle">Restore initial test bankroll ($20)</text>
+
+        <!-- Tool 7: sync_paper_friction_db.py -->
+        <rect x="655" y="728" width="310" height="64" rx="5" fill="#0f172a" />
+        <rect x="655" y="728" width="310" height="64" rx="5" fill="rgba(6, 78, 59, 0.3)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="810" y="746" fill="#f8fafc" font-size="9.5" font-weight="700" text-anchor="middle">sync_paper_friction_db.py</text>
+        <text x="810" y="760" fill="#34d399" font-size="8" text-anchor="middle">Execution Friction Synchronizer</text>
+        <text x="810" y="773" fill="#94a3b8" font-size="7.5" text-anchor="middle">Calibrate paper slippage against on-chain reality</text>
+        <text x="810" y="784" fill="#94a3b8" font-size="7.5" text-anchor="middle">Maintain exact depth &amp; gas model</text>
+
+        <!-- Tool 8: zombie_sweep_moonbag.py -->
+        <rect x="985" y="728" width="310" height="64" rx="5" fill="#0f172a" />
+        <rect x="985" y="728" width="310" height="64" rx="5" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="1140" y="746" fill="#f8fafc" font-size="9.5" font-weight="700" text-anchor="middle">zombie_sweep_moonbag.py</text>
+        <text x="1140" y="760" fill="#fbbf24" font-size="8" text-anchor="middle">Dust &amp; Zombie Position Cleaner</text>
+        <text x="1140" y="773" fill="#94a3b8" font-size="7.5" text-anchor="middle">Sweep stuck moonbag tokens post-TP2</text>
+        <text x="1140" y="784" fill="#94a3b8" font-size="7.5" text-anchor="middle">Reclaim dust balances &amp; prune DB records</text>
+
+        <!-- ============ EXTERNAL INFRASTRUCTURE ============ -->
+        <rect x="25" y="818" width="1290" height="75" rx="10" fill="rgba(251, 191, 36, 0.04)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="42" y="836" fill="#fbbf24" font-size="9.5" font-weight="700">EXTERNAL PROTOCOLS &amp; ON-CHAIN INFRASTRUCTURE</text>
+
+        <rect x="45" y="842" width="230" height="42" rx="5" fill="#0f172a" />
+        <rect x="45" y="842" width="230" height="42" rx="5" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="160" y="859" fill="#f8fafc" font-size="9" font-weight="700" text-anchor="middle">Robinhood Chain RPC</text>
+        <text x="160" y="873" fill="#94a3b8" font-size="7.5" text-anchor="middle">EVM 4663 · PoolManager / StateView</text>
+
+        <rect x="300" y="842" width="230" height="42" rx="5" fill="#0f172a" />
+        <rect x="300" y="842" width="230" height="42" rx="5" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="415" y="859" fill="#f8fafc" font-size="9" font-weight="700" text-anchor="middle">Blockscout API</text>
+        <text x="415" y="873" fill="#94a3b8" font-size="7.5" text-anchor="middle">Contract bytecode &amp; transfers API</text>
+
+        <rect x="555" y="842" width="230" height="42" rx="5" fill="#0f172a" />
+        <rect x="555" y="842" width="230" height="42" rx="5" fill="rgba(8, 51, 68, 0.45)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="670" y="859" fill="#f8fafc" font-size="9" font-weight="700" text-anchor="middle">GeckoTerminal API</text>
+        <text x="670" y="873" fill="#22d3ee" font-size="7.5" text-anchor="middle">DEX pools &amp; trades activity</text>
+
+        <rect x="810" y="842" width="230" height="42" rx="5" fill="#0f172a" />
+        <rect x="810" y="842" width="230" height="42" rx="5" fill="rgba(8, 51, 68, 0.45)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="925" y="859" fill="#f8fafc" font-size="9" font-weight="700" text-anchor="middle">Telegram Bot API</text>
+        <text x="925" y="873" fill="#22d3ee" font-size="7.5" text-anchor="middle">BotFather UI &amp; notify alerts</text>
+
+        <rect x="1065" y="842" width="230" height="42" rx="5" fill="#0f172a" />
+        <rect x="1065" y="842" width="230" height="42" rx="5" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="1180" y="859" fill="#f8fafc" font-size="9" font-weight="700" text-anchor="middle">9router Gateway :20128</text>
+        <text x="1180" y="873" fill="#a78bfa" font-size="7.5" text-anchor="middle">Local LLM model gateway</text>
+
+        <!-- ============ DATA PATH ARROWS (COLLISION-FREE) ============ -->
+
+        <!-- scanner -> listener (LIVE) -->
+        <line x1="160" y1="130" x2="160" y2="180" stroke="#34d399" stroke-width="2" marker-end="url(#a-emerald)"/>
+        <text x="168" y="158" fill="#34d399" font-size="8" font-weight="600">process_ca() — LIVE</text>
+
+        <!-- tracker -> listener (LEGACY / OFF) -->
+        <path d="M 330 130 L 330 155 L 260 155 L 260 180" fill="none" stroke="#64748b" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#a-slate)"/>
+        <text x="335" y="152" fill="#64748b" font-size="7.5">legacy (insider_alert_only=1)</text>
+
+        <!-- gate chain: listener -> safety -> clone_guard -> v4 -->
+        <line x1="275" y1="228" x2="315" y2="228" stroke="#fb7185" stroke-width="1.5" marker-end="url(#a-rose)"/>
+        <text x="295" y="222" fill="#94a3b8" font-size="7" text-anchor="middle">pass</text>
+
+        <line x1="545" y1="228" x2="585" y2="228" stroke="#fb7185" stroke-width="1.5" marker-end="url(#a-rose)"/>
+        <text x="565" y="222" fill="#94a3b8" font-size="7" text-anchor="middle">pass</text>
+
+        <line x1="815" y1="228" x2="855" y2="228" stroke="#fb7185" stroke-width="1.5" marker-end="url(#a-rose)"/>
+        <text x="835" y="222" fill="#94a3b8" font-size="7" text-anchor="middle">pass</text>
+
+        <!-- v4 -> trader -->
+        <path d="M 970 275 L 970 312 L 430 312 L 430 335" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#a-emerald)"/>
+        <text x="700" y="307" fill="#34d399" font-size="8" text-anchor="middle">valid on-chain quoted pool</text>
+
+        <!-- trader -> engine -->
+        <line x1="545" y1="382" x2="585" y2="382" stroke="#34d399" stroke-width="1.5" marker-end="url(#a-emerald)"/>
+        <text x="565" y="375" fill="#94a3b8" font-size="7" text-anchor="middle">open</text>
+
+        <!-- engine -> notify/control_bot alerts -->
+        <line x1="815" y1="382" x2="855" y2="382" stroke="#fb923c" stroke-width="1.5" marker-end="url(#a-orange)"/>
+        <text x="835" y="375" fill="#94a3b8" font-size="7" text-anchor="middle">alerts</text>
+
+        <!-- tracker -> notify/control_bot bypass (Routed cleanly above boxes at y=46) -->
+        <path d="M 545 75 L 565 75 L 565 46 L 1260 46 L 1260 382 L 1085 382" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#a-orange)"/>
+        <text x="1245" y="42" fill="#fb923c" font-size="7.5" text-anchor="end">direct notify (intel alert)</text>
+
+        <!-- rotate_insiders -> insider_wallets (db.py) -->
+        <path d="M 492 652 L 492 590 L 210 590 L 210 570" fill="none" stroke="#a78bfa" stroke-width="1.4" marker-end="url(#a-violet)"/>
+        <text x="350" y="585" fill="#a78bfa" font-size="7.5" text-anchor="middle">persist &amp; update insider_wallets</text>
+
+        <!-- db.py -> tracker.py (get_active_insiders, routed cleanly through empty channel x=295) -->
+        <path d="M 210 475 L 210 450 L 295 450 L 295 145 L 360 145 L 360 130" fill="none" stroke="#a78bfa" stroke-width="1.2" stroke-dasharray="4,4" marker-end="url(#a-violet)"/>
+        <text x="290" y="445" fill="#a78bfa" font-size="7.5" text-anchor="end">read active insiders</text>
+
+        <!-- ============ LEGEND ============ -->
+        <rect x="170" y="920" width="1000" height="42" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#334155" stroke-width="1"/>
+        
+        <circle cx="200" cy="941" r="5" fill="#34d399" />
+        <text x="212" y="945" fill="#f8fafc" font-size="9">Live Funnel</text>
+
+        <circle cx="330" cy="941" r="5" fill="#22d3ee" />
+        <text x="342" y="945" fill="#f8fafc" font-size="9">v4 Scanner</text>
+
+        <circle cx="460" cy="941" r="5" fill="#fb7185" />
+        <text x="472" y="945" fill="#f8fafc" font-size="9">Safety Gates</text>
+
+        <circle cx="600" cy="941" r="5" fill="#fb923c" />
+        <text x="612" y="945" fill="#f8fafc" font-size="9">Insider / Alerts</text>
+
+        <circle cx="760" cy="941" r="5" fill="#a78bfa" />
+        <text x="772" y="945" fill="#f8fafc" font-size="9">SQLite DB / Tools</text>
+
+        <circle cx="930" cy="941" r="5" fill="#fbbf24" />
+        <text x="942" y="945" fill="#f8fafc" font-size="9">v4 Math / Quoter</text>
+
+        <line x1="1060" y1="941" x2="1090" y2="941" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <text x="1098" y="945" fill="#64748b" font-size="9">Disabled</text>
+      </svg>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot emerald"></div>
+          <h3>1. Pipeline Eksekusi Uniswap v4</h3>
+        </div>
+        <ul>
+          <li>• <strong>Scanner murni v4:</strong> <code>scanner.py</code> menyaring event <code>Initialize</code> dari <code>PoolManager</code> di Robinhood Chain (chainId 4663).</li>
+          <li>• <strong>Pipa Keputusan Inti:</strong> <code>listener.py:process_ca()</code> adalah corong tunggal. Menerima pool lolos scanner, mengeksekusi filter gerbang 1-4.</li>
+          <li>• <strong>Rangkaian Gerbang:</strong> <code>safety.py</code> (dev ≤4%, top10 ≤30%), <code>clone_guard.py</code> (klaster bytecode, max 3 CA/keluarga/24j), <code>goldilocks_eval()</code> (rasio liq/FDV 0ms), dan <code>v4.py</code> (V4Quoter on-chain).</li>
+          <li>• <strong>Eksekusi &amp; Exit:</strong> <code>trader.py</code> mengeksekusi swap, dipantau oleh <code>engine.py</code> tiap 2 detik: TP1 +20% (jual 60%), TP2 +45% (jual 100%), SL -30%, Trail 15%, dan time-stop 240s.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot orange"></div>
+          <h3>2. Radar Insider 2 Sumber (Decoupled)</h3>
+        </div>
+        <ul>
+          <li>• <strong>Pencarian Runner Murni Pasar Luas:</strong> <code>fetch_gainers()</code> mengambil koin runner 100% dari Dexscreener (token profiles, boosts, multi-query v4/RH) tanpa query ke tabel <code>positions</code> — bebas koin zombie &amp; stateless.</li>
+          <li>• <strong>Alert-Only:</strong> <code>tracker.py</code> memantau swap blok on-chain untuk alamat terdaftar di <code>insider_wallets</code>. Hanya menembakkan notifikasi, <strong>tidak membuka order beli</strong> (<code>insider_alert_only=1</code>).</li>
+          <li>• <strong>Skor 2 Sumber (v16.9):</strong> <code>screen_insiders.py</code> menerapkan bobot per-koin: <strong>BS+GT = 2.0</strong>, <strong>BS kuat = 1.0</strong>, <strong>BS lemah = 0.5</strong>, <strong>GT-only = 0.25 (karantina)</strong>, alamat kontrak/burn = 0.</li>
+          <li>• <strong>Gate Promosi:</strong> Skor total ≥ 2.0 <strong>DAN</strong> minimal 2 CA terverifikasi Blockscout. Koin memiliki cap 2.0 per CA serta decay waktu otomatis.</li>
+          <li>• <strong>Rotasi 24 Jam:</strong> <code>rotate_insiders.py</code> mem-prune dompet lunglai (&gt;3 hari tanpa aktifitas &amp; win &lt; 2) dan merekrut pemenang baru dari koin gainers.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>3. Ekosistem Tools &amp; Diagnostik</h3>
+        </div>
+        <ul>
+          <li>• <strong>Inspeksi Pre-Trade:</strong> <code>tools/gate_metrics.py &lt;ca&gt;</code> menguji status likuiditas, FDV, klona, dan safety token secara instan via CLI.</li>
+          <li>• <strong>Analisis Pola Suffix:</strong> <code>tools/suffix_stats.py</code> membedah win/loss/rug per-suffix alamat (misal audit <code>...7777</code> yang membuktikan rug rate seimbang 19% vs 18%).</li>
+          <li>• <strong>Telemetri Database:</strong> <code>tools/db_status.py</code> melaporkan kesehatan SQLite, WAL, dan metrik posisi tertutup.</li>
+          <li>• <strong>Manajemen Bankroll &amp; Paper:</strong> <code>reset_paper_wallet.py</code> mereset modal uji ($20), <code>sync_paper_friction_db.py</code> mengkalibrasi slippage paper vs realita on-chain, dan <code>zombie_sweep_moonbag.py</code> membersihkan sisa debu posisi.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      Hoodsniper v16.9 Architecture Reference &nbsp;•&nbsp; Lead Architect: Ahmad Irfan &nbsp;•&nbsp; Chief of AI Ops: Atlas &nbsp;•&nbsp; Security &amp; Audit: Cipher
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Secrets & Environment (JANGAN PERNAH DI-PUSH)
+.env
+*.session
+*.session-journal
+*.key
+*.pem
+
+# Databases & Data Files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Python cache & Tests
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS / Temporary
+.DS_Store
+*.tmp
+hoodsniper.db.bak*

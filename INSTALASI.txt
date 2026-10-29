@@ -1,0 +1,66 @@
+============================================================
+sniperboot v16 — PAKET FULL (publik + pagar latihan + exit)
+============================================================
+Ini SELURUH bot dalam satu folder, sudah termasuk semua patch:
+  1. Log filter koin disiarkan ke channel publik (tombol dipangkas
+     hanya Chart/Tx; panel tetap khusus admin; perintah /log).
+  2. Pagar latihan: selama mode LATIHAN, buy LIVE ditahan keras
+     (menutup celah "Gagal buy: saldo ETH kurang" saat Mata mati).
+  3. Hasil exit (TP/SL/trailing/time stop/dll.) ikut disiarkan ke
+     channel publik, teks disensor (baris "Saldo kas" dibuang).
+
+TIDAK PERLU menimpa file satu per satu lagi. Pasang sebagai
+folder BARU yang bersih, lalu pindahkan .env + database.
+
+------------------------------------------------------------
+LANGKAH PASANG (di server)
+------------------------------------------------------------
+1) Ekstrak zip ini di folder home:
+     unzip sniperboot-v16-FULL.zip
+   -> terbentuk folder: sniperboot-v16-full
+
+2) Salin .env dan database dari folder lama (~/done) — .env di
+   sana sudah berisi PUBLIC_LOG_CHAT_ID=-1003811895846 dan
+   PUBLIC_LOG_LINK=https://t.me/terstsat:
+     cp ~/done/.env ~/sniperboot-v16-full/.env
+     cp ~/done/hoodsniper.db ~/sniperboot-v16-full/hoodsniper.db
+   (Bila userbot aktif di .env lama, salin juga file .session-nya.)
+
+3) Siapkan PM2 untuk folder baru. Edit ecosystem.config.js di
+   folder sniperboot-v16-full:
+     - name: ganti jadi "botfull"
+     - interpreter: ganti jadi path python venv kamu
+       (jalankan `which python` saat venv myenv aktif, salin hasilnya)
+   Lalu:
+     cd ~/sniperboot-v16-full
+     mkdir -p logs
+     pm2 start ecosystem.config.js
+
+4) MATIKAN proses bot lain (token sama tidak boleh jalan ganda):
+     pm2 stop final_bot profit
+   Cek dengan `pm2 list`: hanya "botfull" yang online.
+
+5) Verifikasi (tunggu ±30 detik setelah start):
+     pm2 logs botfull --lines 100 --nostream | grep -i public
+   Harus muncul: [public-log] AKTIF -> chat -1003811895846
+   Di bot: kirim /log -> harus menjawab AKTIF.
+   Kartu filter berikutnya harus tayang di channel terst.
+
+------------------------------------------------------------
+SYARAT CHANNEL (sekali saja, di Telegram)
+------------------------------------------------------------
+Bot WAJIB jadi Administrator di channel terst
+(Edit channel -> Administrators -> tambahkan bot ini,
+izin Post Messages). Tanpa itu log menampilkan:
+  [public notify fail] You can't write in this chat
+dan tidak ada kartu yang tayang — itu bukan kesalahan kode.
+
+------------------------------------------------------------
+CATATAN
+------------------------------------------------------------
+- Jangan jalankan dua proses bot bersamaan (token yang sama
+  berebut update Telegram; yang kalah terlihat mati total).
+- File berubah dari versi asli: bot.py, sniper/config.py,
+  sniper/control_bot.py, sniper/listener.py, sniper/engine.py,
+  .env.example. Detail: PANDUAN_LOG_PUBLIK.md,
+  CATATAN_PATCH_LATIHAN.md, CATATAN_SIARAN_EXIT.md di folder ini.

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hoodsniper — demo panel</title>
+<style>
+  :root{
+    --chat:#0e1621;--header:#17212b;--bubble:#182533;
+    --btn:#20303f;--btn-hover:#2a3f52;--btn-text:#63b3ed;
+    --txt:#e9edf1;--dim:#6d7f8f;--green:#4bb34b;--red:#e5484d;--amber:#e0a44a;--code:#8bd0ff;
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:#05080c;color:var(--txt);font-family:var(--sans);
+    display:flex;flex-direction:column;align-items:center;gap:14px;padding:22px 12px 46px;min-height:100%}
+  .cap{max-width:430px;width:100%;color:var(--dim);font-size:12.5px;line-height:1.55}
+  .cap b{color:#9fb3c4;font-weight:600}
+  .phone{width:100%;max-width:430px;height:772px;background:var(--chat);
+    border:1px solid #1c2a38;border-radius:22px;overflow:hidden;
+    display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+  .top{background:var(--header);padding:11px 14px;display:flex;align-items:center;gap:11px;
+    border-bottom:1px solid #0c141d;flex:0 0 auto}
+  .avatar{width:38px;height:38px;border-radius:50%;flex:0 0 auto;
+    background:linear-gradient(145deg,#2ea6ff,#0d6efd);display:flex;align-items:center;justify-content:center;font-size:18px}
+  .who{display:flex;flex-direction:column;line-height:1.25}
+  .who .n{font-weight:600;font-size:15px}.who .s{font-size:12px;color:var(--green)}
+  .top .bars{margin-left:auto;color:var(--dim);font-size:20px}
+  .body{flex:1 1 auto;overflow-y:auto;padding:14px 12px 18px;scroll-behavior:smooth;
+    background:radial-gradient(circle at 20% 8%,rgba(46,110,160,.07),transparent 42%),
+      radial-gradient(circle at 85% 82%,rgba(46,110,160,.05),transparent 45%),var(--chat)}
+  .body::-webkit-scrollbar{width:6px}.body::-webkit-scrollbar-thumb{background:#22323f;border-radius:3px}
+  .msg{background:var(--bubble);border-radius:12px;border-top-left-radius:4px;padding:10px 12px 8px;
+    margin:0 0 10px;max-width:352px;box-shadow:0 1px 1px rgba(0,0,0,.25);animation:pop .18s ease}
+  @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .msg .h{font-weight:700;font-size:14.5px;margin-bottom:3px}
+  .msg .t{font-size:13.5px;line-height:1.55;white-space:pre-wrap}
+  .msg .t b{color:#fff;font-weight:600}.msg .t i{color:var(--dim);font-style:normal}
+  code{font-family:var(--mono);font-size:12px;color:var(--code);background:rgba(120,190,255,.09);padding:1px 5px;border-radius:5px}
+  .time{font-size:10.5px;color:var(--dim);text-align:right;margin-top:5px}
+  .green .h{color:var(--green)}.red .h{color:var(--red)}.amber .h{color:var(--amber)}
+  .green{border-left:3px solid var(--green)}.red{border-left:3px solid var(--red)}.amber{border-left:3px solid var(--amber)}
+  .kb{display:flex;flex-direction:column;gap:5px;margin-top:9px}
+  .kb .row{display:flex;gap:5px}
+  .kb button{flex:1;background:var(--btn);color:var(--btn-text);border:none;padding:9px 6px;border-radius:8px;
+    font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:background .12s,transform .05s;
+    display:flex;align-items:center;justify-content:center;gap:5px;min-height:36px}
+  .kb button:hover{background:var(--btn-hover)}.kb button:active{transform:scale(.97)}
+  .kb button.wide{flex:none;width:100%}.kb button.on{color:#bfeecb}
+  .kb button.mini{flex:0 0 auto;min-width:40px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block}
+  .demo{max-width:430px;width:100%;display:flex;flex-direction:column;gap:8px}
+  .demo .lbl{color:var(--dim);font-size:11.5px}
+  .demo .btns{display:flex;gap:8px;flex-wrap:wrap}
+  .demo .btns button{background:#12202c;border:1px solid #223345;color:#cfe0ee;padding:9px 12px;border-radius:9px;
+    font-size:12.5px;cursor:pointer;font-weight:600;font-family:var(--sans);transition:.12s}
+  .demo .btns button:hover{background:#182b3a;border-color:#2c455c}
+  .demo .btns button.reset{color:#9aa9b6}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1f3040;color:#dceaf6;
+    padding:8px 16px;border-radius:20px;font-size:12.5px;opacity:0;pointer-events:none;transition:.2s;border:1px solid #2c455c}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+  <div class="cap"><b>hoodsniper — demo panel bot.</b> Simulasi tampilan (bukan Telegram asli). Semua tombol bisa diklik. Di 📡 Sources kamu bisa <b>tambah / hapus / on-off</b> channel (publik & private, channel & grup) tanpa batas — tiap source jalan independen. Tombol bawah = simulasi sinyal & <code>/id</code>.</div>
+  <div class="phone">
+    <div class="top">
+      <div class="avatar">🤖</div>
+      <div class="who"><div class="n">hoodsniper_bot</div><div class="s">bot</div></div>
+      <div class="bars">⋮</div>
+    </div>
+    <div class="body" id="body"></div>
+  </div>
+  <div class="demo">
+    <div class="lbl">Simulasi:</div>
+    <div class="btns">
+      <button data-act="notifBuy">🟢 Call → BUY</button>
+      <button data-act="notifSocial">🌐 SKIP sosmed</button>
+      <button data-act="notifSafety">🛡 SKIP safety</button>
+      <button data-act="idFlow">🆔 /id + forward</button>
+      <button class="reset" data-act="reset">↺ Reset</button>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+<script>
+const MODE_LABEL={off:'Off (semua lolos)',any:'Any (min 1 sosmed)',x:'Punya X/Twitter',
+  tg:'Punya Telegram',x_tg:'Punya X + Telegram',web:'Punya Website',count:'Min N sosmed'};
+const state={
+  social:'any',minCount:2,failClosed:false,panelEl:null,nextId:5,wallets:[],nextWid:1,
+  sources:[
+    {id:1,name:'Degen Public CH',chat:'-1001987654321',topic:0,mcap:30000,on:true},
+    {id:2,name:'RH Member (forum)',chat:'-1002103131992',topic:395868,mcap:10000,on:true},
+    {id:3,name:'Alpha Group (publik)',chat:'-1001555222333',topic:0,mcap:20000,on:true},
+    {id:4,name:'VIP Private (join)',chat:'-1009998887',topic:0,mcap:15000,on:true},
+  ],
+};
+const body=document.getElementById('body');
+const now=()=>{const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
+const money=n=>'$'+Number(n).toLocaleString('en-US');
+
+function kbHTML(rows){
+  if(!rows||!rows.length)return '';
+  let h='<div class="kb">';
+  for(const row of rows){h+='<div class="row">';
+    for(const b of row){
+      const cls=(b.wide?'wide ':'')+(b.mini?'mini ':'')+(b.on?'on':'');
+      const dot=b.on?'<span class="dot"></span>':'';
+      h+='<button class="'+cls+'" data-act="'+b.act+'">'+dot+b.label+'</button>';}
+    h+='</div>';}
+  return h+'</div>';
+}
+function bubble(o){
+  const el=document.createElement('div');el.className='msg '+(o.cls||'');
+  el.innerHTML=(o.h?'<div class="h">'+o.h+'</div>':'')+(o.t?'<div class="t">'+o.t+'</div>':'')+kbHTML(o.kb)+'<div class="time">'+now()+'</div>';
+  body.appendChild(el);body.scrollTop=body.scrollHeight;return el;
+}
+function panel(o){
+  const html='<div class="h">'+o.h+'</div><div class="t">'+o.t+'</div>'+kbHTML(o.kb)+'<div class="time">'+now()+'</div>';
+  if(state.panelEl)state.panelEl.innerHTML=html;else state.panelEl=bubble(o);
+  body.scrollTop=body.scrollHeight;
+}
+
+function menu(){panel({h:'🤖 hoodsniper v2',
+  t:'status: <b>▶️ AKTIF</b>\n👛 <code>0x9a3F…b71C</code>\n⛽ saldo: <b>0.084210 ETH</b>\n📊 posisi open: <b>2</b> | 📡 sources aktif: <b>'+state.sources.filter(s=>s.on).length+'</b>\n💵 buy size: <b>$1.00</b>/call',
+  kb:[[{label:'📊 Posisi',act:'positions'},{label:'📡 Sources',act:'sources'}],
+     [{label:'⚙️ Settings',act:'settings'},{label:'📈 Stats',act:'stats'}],
+     [{label:'🧠 Otak',act:'otak'},{label:'👛 Wallet',act:'wallet'}],
+     [{label:'⏸ Pause',act:'toast:⏸ paused'},{label:'🔄 Refresh',act:'menu'}]]});}
+
+function rndHex(n){let x='';const h='0123456789abcdef';for(let i=0;i<n;i++)x+=h[Math.floor(Math.random()*16)];return x;}
+function wallet(){
+  let t=state.wallets.length? state.wallets.map(w=>{
+    const star=w.active?'⭐ ':''; const bal=w.active?' · ⛽ 0.0000 ETH':'';
+    return star+'<b>'+w.name+'</b>'+bal+'\n<code>'+w.addr+'</code>';}).join('\n')
+    : '_belum ada wallet._\nTap ➕ Generate buat bikin baru, atau 📥 Import key lama.';
+  const kb=[];
+  for(const w of state.wallets){const row=[];
+    if(!w.active)row.push({label:'⭐ Pakai '+w.name,act:'wact:'+w.id});
+    row.push({label:'🔑 Key',act:'wkey:'+w.id,mini:true});
+    row.push({label:'🗑',act:'wdel:'+w.id,mini:true});kb.push(row);}
+  kb.push([{label:'➕ Generate',act:'wgen'},{label:'📥 Import',act:'toast:kirim private key (0x..)'}]);
+  kb.push([{label:'« Menu',act:'menu'}]);
+  panel({h:'👛 Wallet ('+state.wallets.length+') — multi-wallet',t,kb});
+}
+function wgen(){
+  const id=state.nextWid++; const first=state.wallets.length===0;
+  const addr='0x'+rndHex(40), key='0x'+rndHex(64);
+  state.wallets.push({id,name:'Wallet '+id,addr,key,active:first});
+  bubble({cls:'green',h:'🆕 Wallet '+id+' dibuat',
+    t:'📬 Address (buat kirim dana):\n<code>'+addr+'</code>\n\n🔑 <b>PRIVATE KEY — backup SEKARANG, lalu hapus pesan ini:</b>\n<code>'+key+'</code>\n\n⚠️ siapa pun yg pegang key ini bisa nguras wallet. Simpan offline, jangan share. Hot wallet — isi secukupnya (burner).'+(first?'\n\n✅ diset jadi wallet aktif (dipakai buat beli).':'')});
+  wallet();
+}
+function wkey(id){const w=state.wallets.find(x=>x.id===id);if(!w)return;
+  bubble({h:'🔑 '+w.name+' — private key',t:'<code>'+w.key+'</code>\n\n📬 <code>'+w.addr+'</code>\n⚠️ hapus pesan ini setelah backup.'});}
+function wact(id){state.wallets.forEach(w=>w.active=(w.id===id));toast('⭐ wallet aktif diganti');wallet();}
+function wdel(id){state.wallets=state.wallets.filter(w=>w.id!==id);toast('🗑 dihapus');wallet();}
+
+function positions(){panel({h:'📊 Posisi Terbuka',
+  t:'🟢 <b>PEPE</b> +62.4% <i>via Degen Public CH</i>\n   entry $0.0000002380 | sisa 4,200,000\n\n🔴 <b>WIF2</b> −11.8% · TP1✓ <i>via RH Member (forum)</i>\n   entry $0.0000009120 | sisa 900,000',
+  kb:[[{label:'PEPE 📉50%',act:'toast:sell 50% PEPE'},{label:'🚨 ALL',act:'toast:sell ALL'},{label:'📊',act:'toast:chart',mini:true}],
+     [{label:'WIF2 📉50%',act:'toast:sell 50% WIF2'},{label:'🚨 ALL',act:'toast:sell ALL'},{label:'📊',act:'toast:chart',mini:true}],
+     [{label:'« Menu',act:'menu'}]]});}
+
+function sources(){
+  let t='';
+  if(!state.sources.length) t='_belum ada source. Tap ➕ Tambah Source._';
+  else t=state.sources.map(s=>{
+    const st=s.on?'✅':'🚫';
+    const tp=s.topic?(' · topic '+s.topic):' · semua topic';
+    return st+' <b>'+s.name+'</b> — mcap ≤ '+money(s.mcap)+'\n   <code>'+s.chat+'</code>'+tp;
+  }).join('\n');
+  const kb=[];
+  for(const s of state.sources){
+    kb.push([
+      {label:(s.on?'🚫 Off ':'✅ On ')+s.name.slice(0,13),act:'toggle:'+s.id},
+      {label:'🗑',act:'del:'+s.id,mini:true},
+    ]);
+  }
+  kb.push([{label:'➕ Tambah Source',act:'addSource'},{label:'« Menu',act:'menu'}]);
+  panel({h:'📡 Sources ('+state.sources.length+') — mirror via akun sendiri',t,kb});
+}
+
+function addSource(){panel({h:'➕ Tambah source',
+  t:'kirim 1 baris: <code>&lt;target&gt; &lt;mcap&gt; &lt;nama&gt;</code>\n\n<b>PUBLIK</b> (channel/grup, auto-resolve):\n<code>@degencalls 30000 Degen Public</code>\n<code>t.me/alphagroup 20000 Alpha Grup</code>\n\n<b>PRIVATE</b> (harus sudah join):\n<code>-1001234567890 15000 VIP Private</code>\n<code>t.me/c/2103131992/250551 30000 Forum Topic</code>\n\n💡 gak tau id private? ketik /id lalu forward pesannya.\n\n<i>di demo ini, tap salah satu buat simulasi nambah:</i>',
+  kb:[
+    [{label:'➕ @degencalls (channel publik)',act:'add:pubch',wide:true}],
+    [{label:'➕ t.me/alphagroup (grup publik)',act:'add:pubgrp',wide:true}],
+    [{label:'➕ -1001234567890 (private)',act:'add:priv',wide:true}],
+    [{label:'« Sources',act:'sources'}],
+  ]});}
+
+function doAdd(kind){
+  const id=state.nextId++;
+  const preset={
+    pubch:{name:'Degen Public',chat:'-1002777888999',topic:0,mcap:30000},
+    pubgrp:{name:'Alpha Grup',chat:'-1002444555666',topic:0,mcap:20000},
+    priv:{name:'VIP Private',chat:'-1001234567890',topic:0,mcap:15000},
+  }[kind];
+  state.sources.push({id,on:true,...preset});
+  bubble({cls:'green',h:'✅ Source ditambahkan',
+    t:'<b>'+preset.name+'</b> — <code>'+preset.chat+'</code> (semua topic) | mcap ≤ '+money(preset.mcap)+'\n<i>pastikan akun userbot sudah join channel ini.</i>'});
+  sources();
+}
+
+function settings(){panel({h:'⚙️ Settings (tap untuk edit)',
+  t:'💵 Buy size (USD): <b>1.0</b>\n🎯 TP1: <b>0.50</b> · TP2: <b>1.00</b> · SL: <b>-0.30</b>\n💧 Min liquidity (USD): <b>500</b>\n🛡 Safety filter: <b>1</b> · dev max <b>5%</b> · top10 <b>40%</b>\n🌐 Filter sosmed: <b>'+MODE_LABEL[state.social]+'</b>\n🌐 Min jumlah sosmed: <b>'+state.minCount+'</b>\n🌐 Skip kalau sosmed kosong: <b>'+(state.failClosed?'1':'0')+'</b>',
+  kb:[[{label:'💵 buy_usd',act:'toast:edit angka'},{label:'🎯 tp1',act:'toast:edit angka'}],
+     [{label:'💧 min_liq',act:'toast:edit angka'},{label:'🛡 safety_on',act:'toast:edit angka'}],
+     [{label:'🌐 Filter sosmed ›',act:'socialPanel',wide:true}],
+     [{label:'« Menu',act:'menu'}]]});}
+
+function socialPanel(){
+  const s=state.social,mk=(m,l)=>({label:l,act:'setSocial:'+m,on:s===m});
+  panel({h:'🌐 Filter Sosmed — pilih mode',
+    t:'mode aktif: <b>'+MODE_LABEL[s]+'</b>\nmin sosmed (mode count): <b>'+state.minCount+'</b>\nskip kalau kosong: <b>'+(state.failClosed?'ya':'tidak')+'</b>\n\n<i>data jejak diambil dari Dexscreener (website / X / Telegram / dll).</i>',
+    kb:[[mk('off','Off'),mk('any','Any')],
+       [mk('x','X/Twitter'),mk('tg','Telegram')],
+       [mk('x_tg','X + TG'),mk('web','Website')],
+       [mk('count','Min '+state.minCount+' sosmed')],
+       [{label:'🔢 Set min count',act:'toast:kirim angka'},{label:(state.failClosed?'🔒':'🔓')+' Fail-closed',act:'toggleFC'}],
+       [{label:'« Settings',act:'settings'}]]});}
+
+function stats(){panel({h:'📈 Stats',
+  t:'📨 call terdeteksi: <b>147</b>\n🟢 total buy: <b>38</b> ($38.00)\n📊 open: <b>2</b> | 🎯 TP2: <b>9</b> | 📈 trail: <b>6</b> | 🛑 SL: <b>14</b> | 🚨 rug: <b>2</b>\n⛽ ETH keluar: 0.0464 | ETH balik (real): 0.0731\n💰 PnL realized: <b>+0.0267 ETH</b>\n\n🏆 <b>Skor Caller</b> (TP1-rate)\n1. <b>alphacaller</b> — 12 call · 58% TP1\n2. <b>rhwhale</b> — 9 call · 44% TP1',
+  kb:[[{label:'« Menu',act:'menu'}]]});}
+
+function otak(){panel({h:'🧠 OTAK — lapisan LLM',
+  t:'provider: <b>anthropic</b> · key ✅\n👁 Mata (entry): <b>ON</b>\n✋ Tangan (review): <b>OFF</b>\nmode: <b>🔴 LIVE</b>\n🚫 blacklist caller: <b>ON</b> (2)\nmodel: <code>claude-haiku-4-5</code>\n💡 insting: <b>7</b>',
+  kb:[[{label:'🔴 Off Mata',act:'toast:toggle Mata'},{label:'🟢 On Tangan',act:'toast:toggle Tangan'}],
+     [{label:'🧪 Mode Latihan',act:'toast:dry-run'},{label:'🎓 Coach',act:'toast:coach'}],
+     [{label:'« Menu',act:'menu'}]]});}
+
+function notifBuy(){bubble({cls:'green',h:'🟢 BUY PEPE  via Degen Public CH',
+  t:'<code>0x4Fa2…9c31</code>\n💰 mcap $18,400 | 💧 liq $6,200 | v3\n🌐 sosmed: web·X·tg\nmasuk <b>$1.00</b> (0.000119 ETH) → 4,200,000 PEPE\nentry $0.0000002380\n🎯 caller: alphacaller (baru)',
+  kb:[[{label:'📉 Sell 50%',act:'toast:sell 50%'},{label:'🚨 Sell ALL',act:'toast:sell ALL'}],
+     [{label:'📊 Chart',act:'toast:chart'},{label:'🔍 Tx',act:'toast:explorer'}]]});}
+
+function notifSocial(){
+  let reason='gak ada X/Twitter';
+  if(state.social==='web')reason='gak ada website';
+  else if(state.social==='tg')reason='gak ada Telegram';
+  else if(state.social==='count')reason='1 link sosmed (min '+state.minCount+') — tg';
+  else if(state.social==='off'||state.social==='any')reason='(filter '+state.social+' — coba set mode X/Web dulu)';
+  bubble({cls:'amber',h:'🌐 SKIP DOGE2  via RH Member (forum)',
+    t:'<code>0x77bC…10aF</code>\n'+reason+'\n<i>filter sosmed aktif: '+MODE_LABEL[state.social]+'</i>'});}
+
+function notifSafety(){bubble({cls:'red',h:'🛡 SKIP SCAMX  via Alpha Group (publik)',
+  t:'<code>0x0dE1…4b90</code>\ndev pegang 12.4% supply (max 5%)'});}
+
+function idFlow(){
+  bubble({cls:'',h:'',t:'<i>kamu:</i> /id'});
+  bubble({h:'🆔 Cari chat_id channel/grup',t:'Forward 1 pesan dari channel-nya ke sini — gw balas chat_id-nya.'});
+  bubble({cls:'',h:'',t:'<i>kamu:</i> ⤴️ [pesan di-forward dari "Sultan Private Calls"]'});
+  bubble({cls:'green',h:'🆔 chat_id: -1002103131992 — Sultan Private Calls',
+    t:'Tambah jadi source, kirim (ganti mcap & nama):\n<code>-1002103131992 30000 Sultan Private</code>\n<i>pastikan akun userbot sudah join channel ini dulu.</i>'});
+}
+
+let toastT;
+function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),1400);}
+function toggleFC(){state.failClosed=!state.failClosed;socialPanel();}
+function reset(){body.innerHTML='';state.panelEl=null;state.social='any';state.failClosed=false;
+  state.nextId=5;state.wallets=[];state.nextWid=1;state.sources=[
+    {id:1,name:'Degen Public CH',chat:'-1001987654321',topic:0,mcap:30000,on:true},
+    {id:2,name:'RH Member (forum)',chat:'-1002103131992',topic:395868,mcap:10000,on:true},
+    {id:3,name:'Alpha Group (publik)',chat:'-1001555222333',topic:0,mcap:20000,on:true},
+    {id:4,name:'VIP Private (join)',chat:'-1009998887',topic:0,mcap:15000,on:true}];
+  menu();}
+
+const ACTIONS={menu,positions,sources,addSource,settings,socialPanel,stats,otak,notifBuy,notifSocial,notifSafety,idFlow,reset,toggleFC,wallet,wgen};
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button[data-act]');if(!b)return;
+  const act=b.getAttribute('data-act');
+  if(act.startsWith('toast:'))return toast(act.slice(6));
+  if(act.startsWith('setSocial:')){state.social=act.slice(10);socialPanel();return toast('🌐 mode → '+state.social);}
+  if(act.startsWith('add:'))return doAdd(act.slice(4));
+  if(act.startsWith('wact:'))return wact(+act.slice(5));
+  if(act.startsWith('wkey:'))return wkey(+act.slice(5));
+  if(act.startsWith('wdel:'))return wdel(+act.slice(5));
+  if(act.startsWith('toggle:')){const id=+act.slice(7);const s=state.sources.find(x=>x.id===id);if(s)s.on=!s.on;return sources();}
+  if(act.startsWith('del:')){const id=+act.slice(4);state.sources=state.sources.filter(x=>x.id!==id);toast('🗑 dihapus');return sources();}
+  if(ACTIONS[act])ACTIONS[act]();
+});
+menu();
+</script>
+</body>
+</html>
